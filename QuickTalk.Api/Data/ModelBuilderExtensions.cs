@@ -7,6 +7,11 @@ namespace QuickTalk.Api.Data
     {
         public static void ConfigureRelationships (this ModelBuilder modelBuilder)
         {
+            // Usernames must be unique
+            modelBuilder.Entity<User>()
+            .HasIndex(u => u.Username)
+            .IsUnique();
+
             // One-to-many: User -> Message
             modelBuilder.Entity<Message>()
                 .HasOne(m => m.User)
@@ -38,6 +43,11 @@ namespace QuickTalk.Api.Data
                 .OnDelete(DeleteBehavior.Cascade);
             */
             #endregion
+
+            // Store room type as string instead of int
+            modelBuilder.Entity<Chatroom>()
+            .Property(c => c.RoomType)
+            .HasConversion<string>();
 
             // One-to-many: Chatroom -> Message
             modelBuilder.Entity<Message>()
