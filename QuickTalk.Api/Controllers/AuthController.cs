@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using QuickTalk.Api.Data;
+using QuickTalk.Api.DTOs;
 using QuickTalk.Api.Models;
 using QuickTalk.Api.Services;
 using System.IdentityModel.Tokens.Jwt;
@@ -42,6 +43,40 @@ namespace QuickTalk.Api.Controllers
         }
 
 
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterModel registerModel)
+        {
+            // Check if the username or email is already taken
+            if (_context.Users.Any(u => u.Username == registerModel.Username))
+            {
+                return BadRequest("Username is already taken.");
+            }
+
+            if (_context.Users.Any(u => u.Email == registerModel.Email))
+            {
+                return BadRequest("Email is already registered.");
+            }
+
+            // Hash the password
+            var passwordHash = PasswordService.HashPassword(registerModel.Password);
+
+            // Create a new user
+            var user = new User
+            {
+                Username = registerModel.Username,
+                Email = registerModel.Email,
+                PasswordHash = passwordHash,
+                Role = "User"
+            };
+
+            // Add the user to the database
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "User registered successfully." });
+        }
+
+
         private string GenerateToken(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -67,11 +102,5 @@ namespace QuickTalk.Api.Controllers
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
-    }
-
-    public class LoginModel
-    {
-        public string Username { get; set; }
-        public string Password { get; set; }
     }
 }
