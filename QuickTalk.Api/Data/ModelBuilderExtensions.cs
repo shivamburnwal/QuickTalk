@@ -17,7 +17,7 @@ namespace QuickTalk.Api.Data
                 .HasOne(m => m.User)
                 .WithMany(u => u.Messages)
                 .HasForeignKey(m => m.UserID)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.Restrict);
 
             #region Conversation RelationShips
             /*
@@ -81,7 +81,7 @@ namespace QuickTalk.Api.Data
                 .HasOne(mr => mr.User)
                 .WithMany(u => u.MessageReactions)
                 .HasForeignKey(mr => mr.UserID)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
