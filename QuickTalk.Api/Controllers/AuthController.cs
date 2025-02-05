@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using QuickTalk.Api.Data;
 using QuickTalk.Api.DTOs;
@@ -23,19 +24,23 @@ namespace QuickTalk.Api.Controllers
             _configuration = configuration;
         }
 
-        [HttpPost("Login")]
-        public IActionResult Login([FromBody] LoginModel login)
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginModel login)
         {
             if (login == null || string.IsNullOrEmpty(login.Username) || string.IsNullOrEmpty(login.Password))
             {
                 return BadRequest("Username and password are required.");
             }
 
-            var user = _context.Users.SingleOrDefault(x => x.Email == login.Username);
+            var user = await _context.Users.SingleOrDefaultAsync(x => x.Email == login.Username);
             if (user == null || !PasswordService.VerifyPassword(login.Password, user.PasswordHash))
             {
                 return Unauthorized("Invalid username or password.");
             }
+
+            // Update last logged in property
+            user.LastLogin = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
 
             // Generate token for user.
             var token = GenerateToken(user);

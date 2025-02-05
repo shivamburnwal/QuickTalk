@@ -1,4 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using QuickTalk.Api.Data;
+using QuickTalk.Api.Models;
 using System.Security.Claims;
 
 namespace QuickTalk.Api.Services
@@ -6,33 +9,44 @@ namespace QuickTalk.Api.Services
     public class AuthorizationService
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ChatDbContext _context;
 
-        public AuthorizationService(IHttpContextAccessor httpContextAccessor)
+        public AuthorizationService(ChatDbContext context, IHttpContextAccessor httpContextAccessor)
         {
+            _context = context;
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public string? GetAuthenticatedUserId()
+        public int? GetAuthenticatedUserId()
         {
-            // Get the authenticated user ID from the JWT
-            return _httpContextAccessor.HttpContext?
-                .User
-                .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userIdClaim = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(userIdClaim, out int userId) ? userId : null;
         }
 
-        // Validate if the user is authenticated and matches the sender's ID
-        public IActionResult? ValidateSender(int senderUserId)
+        // Validate if the user is part of the chatroom
+        public async Task<IActionResult?> ValidateChatroomAccess(int chatroomId)
         {
             var userId = GetAuthenticatedUserId();
-
             if (userId == null)
-                return new UnauthorizedObjectResult("You must be logged in to send messages.");
+                return new UnauthorizedObjectResult("You must be logged in.");
 
-            if (senderUserId.ToString() != userId)
-                return new UnauthorizedObjectResult("You are not authorized as this user");
+            var isUserPartOfChatroom = await _context.UserChatrooms
+                                        .AnyAsync(uc => uc.ChatroomID == chatroomId && uc.UserID == userId);
 
-            // Valid user
-            return null;
+            if (!isUserPartOfChatroom)
+                return new UnauthorizedObjectResult("User is not a part of this chatroom.");
+
+            return null; // User is authorized
+        }
+
+        public async Task<bool> ValidateUserAdmin(int chatroomId)
+        {
+            var userId = GetAuthenticatedUserId();
+            if (userId == null)
+                return false;
+
+            return await _context.UserChatrooms
+                .AnyAsync(uc => uc.UserID == userId && uc.ChatroomID == chatroomId && uc.Role == ChatroomRole.Admin);
         }
     }
 }
