@@ -1,0 +1,51 @@
+# version: '3.8'
+
+services:
+  # Backend API Service (QuickTalk.Api)
+  api:
+    build:
+      context: ./QuickTalk.Api
+      dockerfile: Dockerfile
+    container_name: quicktalk-api
+    ports:
+      - "5000:80"  # Expose port 5000 for backend API
+      - "5001:5001" # Expose port for debugging
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000  # Ensure it listens on port 5000
+      - DOTNET_USE_POLLING_FILE_WATCHER=1  # For better live reload on code changes
+    depends_on:
+      - db
+    volumes:
+      - ./QuickTalk.Api:/app  # To enable live reload for backend code during development
+
+  # Frontend Service (QuickTalk.Web)
+  web:
+    build:
+      context: ./QuickTalk.Web
+      dockerfile: Dockerfile
+    container_name: quicktalk-web
+    ports:
+      - "5173:5173"  # Expose port 5173 for frontend (vite default)
+    environment:
+      - VITE_API_URL=http://api:5000  # API URL for frontend communication
+    depends_on:
+      - api
+    volumes:
+      - ./QuickTalk.Web:/app  # Enable live reload for frontend code during development
+
+  # Database Service (Optional, if using a database like SQL Server or Postgres)
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: quicktalk-db
+    environment:
+      - SA_PASSWORD=QuickTalk@2025
+      - ACCEPT_EULA=Y
+    ports:
+      - "1433:1433"
+    volumes:
+      - db_data:/var/opt/mssql
+
+volumes:
+  db_data:
+    driver: local
