@@ -5,6 +5,20 @@ using QuickTalk.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Load CORS settings from appsettings.Development.json
+var corsOrigins = builder.Configuration.GetSection("CorsOrigins").Get<string[]>();
+
+// Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.WithOrigins(corsOrigins)  // Use origins from appsettings.Development.json
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 // Add services to the container.
 // Add SQL Service
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -54,6 +68,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Use CORS middleware
+app.UseCors("AllowReactApp");
 
 app.UseHttpsRedirection();
 
