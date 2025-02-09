@@ -16,6 +16,7 @@ namespace QuickTalk.Api.Models
         public ChatroomType RoomType { get; set; }
         public string Description { get; set; } = "";
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime LastModified { get; set; } = DateTime.UtcNow; // Last modification time for chatroom
         public bool IsPrivate { get; set; } = false;
 
         public ICollection<UserChatroom> UserChatrooms { get; set; }
