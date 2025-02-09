@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using QuickTalk.Api.Data;
 
-namespace QuickTalk.Api.Services
+namespace QuickTalk.Api.Services.Others
 {
     public class DatabaseService
     {

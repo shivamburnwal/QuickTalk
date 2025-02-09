@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using QuickTalk.Api.Extensions;
 using QuickTalk.Api.Models;
 
 namespace QuickTalk.Api.Data

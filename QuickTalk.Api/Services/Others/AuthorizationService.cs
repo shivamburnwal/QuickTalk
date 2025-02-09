@@ -4,7 +4,7 @@ using QuickTalk.Api.Data;
 using QuickTalk.Api.Models;
 using System.Security.Claims;
 
-namespace QuickTalk.Api.Services
+namespace QuickTalk.Api.Services.Others
 {
     public class AuthorizationService
     {

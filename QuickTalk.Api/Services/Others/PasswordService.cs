@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace QuickTalk.Api.Services
+namespace QuickTalk.Api.Services.Others
 {
     public class PasswordService
     {

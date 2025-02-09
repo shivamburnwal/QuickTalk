@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using QuickTalk.Api.Models;
-using QuickTalk.Api.Services;
+using QuickTalk.Api.Services.Others;
 
 namespace QuickTalk.Api.Data
 {

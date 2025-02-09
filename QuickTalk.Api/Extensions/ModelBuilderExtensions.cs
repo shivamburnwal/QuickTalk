@@ -1,11 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using QuickTalk.Api.Models;
 
-namespace QuickTalk.Api.Data
+namespace QuickTalk.Api.Extensions
 {
     public static class ModelBuilderExtensions
     {
-        public static void ConfigureRelationships (this ModelBuilder modelBuilder)
+        public static void ConfigureRelationships(this ModelBuilder modelBuilder)
         {
             // Usernames must be unique
             modelBuilder.Entity<User>()
