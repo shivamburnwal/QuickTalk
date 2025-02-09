@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using QuickTalk.Api.Data;
 using QuickTalk.Api.DTOs;
-using QuickTalk.Api.Models;
-using QuickTalk.Api.Services;
+using QuickTalk.Api.Services.Interfaces;
 
 namespace QuickTalk.Api.Controllers
 {
@@ -13,44 +10,47 @@ namespace QuickTalk.Api.Controllers
     [Authorize]
     public class MessageController : ControllerBase
     {
-        private readonly ChatDbContext _context;
-        private readonly AuthorizationService _authService;
+        private readonly IMessageService _messageService;
 
-        public MessageController(ChatDbContext context, AuthorizationService authService)
+        public MessageController(IMessageService messageService)
         {
-            _context = context;
-            _authService = authService;
+            _messageService = messageService;
         }
 
         [HttpPost("send")]
         public async Task<IActionResult> SendMessage([FromBody] SendMessageRequest request)
         {
-            // Check if the sender exists
-            var sender = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.SenderUsername);
-            if (sender == null)
-                return NotFound("Sender not found");
+            try
+            {
+                var messageId = await _messageService.SendMessageAsync(request);
+                return Ok(new { messageId });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
-            // Check if the chatroom exists
-            var chatRoom = await _context.Chatrooms.FindAsync(request.ChatRoomID);
-            if (chatRoom == null)
-                return NotFound("Chat room not found");
-
-            // Validate if user is in the chatroom
-            var accessResult = await _authService.ValidateChatroomAccess(chatRoom.ChatroomID);
-            if (accessResult != null)
-                return accessResult;
-
-            var message = new Message {
-                ChatroomID = request.ChatRoomID,
-                UserID = sender.UserID,
-                Content = request.Content,
-                SentAt = DateTime.UtcNow
-            };
-
-            _context.Messages.Add(message);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { messageId = message.MessageID });
+        [HttpDelete("delete/{messageId}")]
+        public async Task<IActionResult> DeleteMessage(int messageId)
+        {
+            try
+            {
+                var response = await _messageService.DeleteMessageAsync(messageId);
+                return Ok(new { response });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using QuickTalk.Api.Data;
 using QuickTalk.Api.DTOs;
-using QuickTalk.Api.Services;
+using QuickTalk.Api.Services.Interfaces;
+using System.Net;
 
 namespace QuickTalk.Api.Controllers
 {
@@ -12,110 +11,96 @@ namespace QuickTalk.Api.Controllers
     [Authorize]
     public class UsersController : ControllerBase
     {
-        private readonly ChatDbContext _context;
-        private readonly AuthorizationService _authService;
+        private readonly IUsersService _usersService;
 
-        public UsersController(ChatDbContext context, AuthorizationService authSerivce)
+        public UsersController(IUsersService usersService)
         {
-            _context = context;
-            _authService = authSerivce;
+            _usersService = usersService;
         }
 
-        // Search users
         [HttpGet("search")]
         public async Task<IActionResult> SearchUsers([FromQuery] string name)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return BadRequest("Search query cannot be empty");
 
-            var users = await _context.Users
-                .Where(u => u.Username.Contains(name))
-                .Select(u => new UserDTO
-                {
-                    UserID = u.UserID,
-                    Username = u.Username,
-                    DisplayName = u.DisplayName
-                })
-                .ToListAsync();
-
-            return Ok(users);
+            try
+            {
+                var users = await _usersService.SearchUsersAsync(name);
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError, $"An error occurred: {ex.Message}");
+            }
         }
 
-        // Get user
         [HttpGet("{userId}")]
         public async Task<IActionResult> GetUserProfile(int userId)
-        { 
-            var user = await _context.Users
-                .Where(u => u.UserID == userId)
-                .Select(u => new UserProfileDTO
-                {
-                    UserID = u.UserID,
-                    Username = u.Username,
-                    Email = u.Email,
-                    DisplayName = u.DisplayName,
-                    AvatarUrl = u.AvatarUrl
-                })
-                .FirstOrDefaultAsync();
+        {
+            try
+            {
+                var user = await _usersService.GetUserProfileAsync(userId);
+                if (user == null)
+                    return NotFound("User not found");
 
-            if (user == null)
-                return NotFound("User not found");
-
-            return Ok(user);
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError, $"An error occurred: {ex.Message}");
+            }
         }
 
-        // Update user profile
         [HttpPut("{userId}")]
         public async Task<IActionResult> UpdateUserProfile(int userId, [FromBody] UserUpdateDTO userUpdateDTO)
         {
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-                return NotFound("User not found");
+            try
+            {
+                var success = await _usersService.UpdateUserProfileAsync(userId, userUpdateDTO);
+                if (!success)
+                    return NotFound("User not found");
 
-            // Update user properties
-            user.Username = userUpdateDTO.Username ?? user.Username;
-            user.Email = userUpdateDTO.Email ?? user.Email;
-            user.AvatarUrl = userUpdateDTO.AvatarUrl ?? user.AvatarUrl;
-
-            await _context.SaveChangesAsync();
-
-            return Ok("Profile updated successfully.");
+                return Ok("Profile updated successfully.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError, $"An error occurred: {ex.Message}");
+            }
         }
 
-        // Get chatrooms for user
         [HttpGet("{userId}/chatrooms")]
         public async Task<IActionResult> GetUserChatrooms(int userId)
         {
-            var user = await _context.Users
-                .Include(u => u.UserChatrooms)
-                .ThenInclude(uc => uc.Chatroom)
-                .FirstOrDefaultAsync(u => u.UserID == userId);
-
-            if (user == null)
-                return NotFound("User not found");
-
-            var chatrooms = user.UserChatrooms.Select(uc => new UserChatroomDTO
+            try
             {
-                ChatroomID = uc.Chatroom.ChatroomID,
-                Name = uc.Chatroom.Name,
-                RoomType = uc.Chatroom.RoomType.ToString(),
-                IsPrivate = uc.Chatroom.IsPrivate
-            });
+                var chatrooms = await _usersService.GetUserChatroomsAsync(userId);
+                if (chatrooms == null)
+                    return NotFound("User not found");
 
-            return Ok(chatrooms);
+                return Ok(chatrooms);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError, $"An error occurred: {ex.Message}");
+            }
         }
 
-        // Delete user
         [HttpDelete("{userId}")]
         public async Task<IActionResult> DeleteUser(int userId)
         {
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-                return NotFound("User not found");
+            try
+            {
+                var success = await _usersService.DeleteUserAsync(userId);
+                if (!success)
+                    return NotFound("User not found");
 
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-
-            return Ok("Account deleted successfully.");
+                return Ok("Account deleted successfully.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError, $"An error occurred: {ex.Message}");
+            }
         }
     }
 }

@@ -29,21 +29,6 @@
         public string? Description { get; set; }
     }
 
-    public class AddUserRequestDTO
-    {
-        public int UserID { get; set; }
-    }
-
-    public class RemoveUserRequestDTO
-    {
-        public int UserID { get; set; }
-    }
-
-    public class MakeAdminRequestDTO
-    {
-        public int UserID { get; set; }
-    }
-
     public class UserChatroomsViewDTO
     {
         public int ChatroomID { get; set; }

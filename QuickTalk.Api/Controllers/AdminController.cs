@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using QuickTalk.Api.Services;
+using QuickTalk.Api.Services.Others;
 using System.Data;
 
 namespace QuickTalk.Api.Controllers
