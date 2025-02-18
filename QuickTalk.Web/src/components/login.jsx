@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { setToken } from '../utils/auth';
 import { loginUser } from '../services/api';
 import { createLoginDto } from '../dto/AuthDTOs'
+import { Navigate, useNavigate } from 'react-router-dom';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -15,7 +17,7 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(''); // Reset error message
+    setError('');
 
     try {
       const requestData = createLoginDto(formData.email, formData.password);
@@ -24,12 +26,11 @@ const LoginPage = () => {
       // Store JWT for user session in local storage.
       setToken(response.data.token);
 
-      // Redirect or handle login success
-      // window.location.href = '/dashboard'; // Redirect to a dashboard or home page after login
+      navigate('/dashboard');
 
     } catch (err) {
       console.error('Login failed:', err);
-      setError('Invalid email or password'); // Set error
+      setError('Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -48,7 +49,7 @@ const LoginPage = () => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full p-3 mt-1 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full py-2 px-4 mt-1 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
@@ -60,7 +61,7 @@ const LoginPage = () => {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full p-3 mt-1 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full py-2 px-4 mt-1 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
@@ -68,7 +69,7 @@ const LoginPage = () => {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-3 ${loading ? 'bg-gray-400' : 'bg-blue-500 hover:bg-blue-600'} text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            className={`w-full mt-3 py-3 ${loading ? 'bg-gray-400' : 'bg-blue-500 hover:bg-blue-600'} text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
