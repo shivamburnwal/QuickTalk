@@ -17,6 +17,29 @@ namespace QuickTalk.Api.Services.Implementations
             _authService = authService;
         }
 
+        public async Task<MessageDTO> GetMessageByIdAsync(int messageId)
+        {
+            var message = await _unitOfWork.MessageRepository.GetByIdAsync(messageId);
+            if (message == null)
+                throw new Exception("Message not found.");
+
+            var user = message.UserID != null
+                ? await _unitOfWork.UsersRepository.GetByIdAsync((int)message.UserID)
+                : null;
+
+            return new MessageDTO
+            {
+                MessageID = message.MessageID,
+                Content = message.Content,
+                SentAt = message.SentAt,
+                Sender = user != null ? new UserDTO
+                {
+                    UserID = user.UserID,
+                    Username = user.Username
+                } : null
+            };
+        }
+
         public async Task<int> SendMessageAsync(SendMessageRequest request)
         {
             var senderId = _authService.GetAuthenticatedUserId();
@@ -77,5 +100,6 @@ namespace QuickTalk.Api.Services.Implementations
             await _unitOfWork.SaveChangesAsync();
             return "Message Deleted Succeddfully.";
         }
+
     }
 }

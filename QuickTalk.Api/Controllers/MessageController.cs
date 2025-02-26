@@ -17,6 +17,24 @@ namespace QuickTalk.Api.Controllers
             _messageService = messageService;
         }
 
+        [HttpGet("{messageId}")]
+        public async Task<IActionResult> GetMessageById(int messageId)
+        {
+            try
+            {
+                var message = await _messageService.GetMessageByIdAsync(messageId);
+                return Ok(new { message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         [HttpPost("send")]
         public async Task<IActionResult> SendMessage([FromBody] SendMessageRequest request)
         {
