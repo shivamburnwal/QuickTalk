@@ -1,32 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { getDirectChatrooms, getGroupChatrooms } from "../../services/api";
 import ChatroomsList from "./chatroomsList";
-import ChatWindow from "./chatroomWindow";
+import ChatroomWindow from "./chatroomWindow";
+import { useAuth } from "../../context/AuthContext";
 
 const Dashboard = () => {
+  const { user } = useAuth();
+
   const [chatrooms, setChatrooms] = useState([]);
   const [selectedChatroom, setSelectedChatroom] = useState(null);
 
   useEffect(() => {
+    if (!user?.token) return;
+
     const fetchChatrooms = async () => {
       try {
-        // Fetch Direct Chatrooms and Group Chatrooms
-        const directResponse = await getDirectChatrooms();
-        const groupResponse = await getGroupChatrooms();
+        const [directResponse, groupResponse] = await Promise.all([
+          getDirectChatrooms(user.id),
+          getGroupChatrooms(user.id),
+        ]);
 
-        console.log(directResponse, groupResponse);
-
-        // Combine both responses into one list
-        const allChatrooms = [...directResponse.data, ...groupResponse.data];
-
-        setChatrooms(allChatrooms); // Set the combined chatrooms list
+        setChatrooms([...directResponse.data, ...groupResponse.data]);
       } catch (error) {
         console.error("Error fetching chatrooms:", error);
       }
     };
 
     fetchChatrooms();
-  }, []);
+  }, [user]);
 
   const handleChatroomSelect = (chatroom) => {
     setSelectedChatroom(chatroom);
@@ -45,7 +46,7 @@ const Dashboard = () => {
           </div>
 
           <div className="col-span-9 p-6 rounded-lg shadow-lg border border-gray-300">
-            <ChatWindow selectedChatroom={selectedChatroom} />
+            <ChatroomWindow selectedChatroom={selectedChatroom} />
           </div>
         </div>
       </div>

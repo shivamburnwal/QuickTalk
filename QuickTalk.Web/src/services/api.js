@@ -1,21 +1,8 @@
 import axios from 'axios';
-import { use } from 'react';
 import { getToken } from '../utils/auth';
 
 // Function to get the JWT token from local storage
 const getAuthToken = () => getToken();
-
-// Extract user id from token
-function getUserIdFromToken(token) {
-  if (!token) return null;
-
-  const payloadBase64 = token.split('.')[1];  // Extract payload part
-  const decodedPayload = atob(payloadBase64);  // Decode base64 to string
-  const payloadObj = JSON.parse(decodedPayload);  // Convert string to JSON object
-
-  return payloadObj.nameid;
-}
-
 
 // Create base API request.
 const baseApiUrl = import.meta.env.VITE_API_URL;
@@ -50,21 +37,21 @@ export const loginUser = async (loginData) => {
   return await api.post('/Auth/login', loginData);
 };
 
-export const getDirectChatrooms = async () => {
-  const token = getAuthToken();
-  const userId = getUserIdFromToken(token);
+export const getDirectChatrooms = async (userId) => {
   return await api.get(`/Chatrooms/user/${userId}/Direct`);
 };
 
-export const getGroupChatrooms = async () => {
-  const token = getAuthToken();
-  const userId = getUserIdFromToken(token);
+export const getGroupChatrooms = async (userId) => {
   return await api.get(`/Chatrooms/user/${userId}/Group`);
 };
 
 export const getChatroom = async (chatroomId) => {
   return await api.get(`/Chatrooms/${chatroomId}`);
 };
+
+export const getMessage = async (messageId) => {
+  return await api.get(`/Message/${messageId}`)
+}
 
 export const sendMessage = async (messageData) => {
   return await api.post('/Message/send', messageData);

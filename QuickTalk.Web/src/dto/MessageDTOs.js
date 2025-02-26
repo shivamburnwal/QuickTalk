@@ -1,5 +1,4 @@
-export const createSendMessageRequestDto = (senderUsername, content, chatRoomID) => ({
-    senderUsername: senderUsername,
+export const createSendMessageRequestDto = (content, chatRoomID) => ({
     content: content,
     chatRoomID: chatRoomID,
 });

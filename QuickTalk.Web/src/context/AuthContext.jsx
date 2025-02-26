@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 import { getToken } from "../utils/auth";
 
-
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
@@ -15,7 +14,7 @@ export const AuthProvider = ({ children }) => {
         const decoded = jwtDecode(token);
         setUser({
           id: decoded.nameid,
-          username: decoded.username,
+          username: decoded.unique_name,
           token: token,
         });
       } catch (error) {
@@ -25,7 +24,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  return <AuthContext.Provider value={user}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{user}}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => useContext(AuthContext);
