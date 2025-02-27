@@ -19,12 +19,16 @@ export const AuthProvider = ({ children }) => {
         });
       } catch (error) {
         console.error("Invalid token", error);
-        localStorage.removeItem("jwt");
+        localStorage.removeItem("authToken");
       }
     }
   }, []);
 
-  return <AuthContext.Provider value={{user}}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, setUser }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => useContext(AuthContext);

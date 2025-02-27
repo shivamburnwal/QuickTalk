@@ -3,12 +3,15 @@ import { setToken } from '../utils/auth';
 import { loginUser } from '../services/api';
 import { createLoginDto } from '../dto/AuthDTOs'
 import { Navigate, useNavigate } from 'react-router-dom';
+import { jwtDecode } from "jwt-decode";
+import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { setUser } = useAuth();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -22,12 +25,18 @@ const LoginPage = () => {
     try {
       const requestData = createLoginDto(formData.email, formData.password);
       const response = await loginUser(requestData);
-
-      // Store JWT for user session in local storage.
+      console.log(response);
+      
+      // Decode token and update user immediately
+      const decoded = jwtDecode(response.data.token);
+      setUser({
+        id: decoded.nameid,
+        username: decoded.unique_name,
+        token: response.data.token,
+      });
       setToken(response.data.token);
 
       navigate('/dashboard');
-
     } catch (err) {
       console.error('Login failed:', err);
       setError('Invalid email or password');
