@@ -41,7 +41,7 @@ const ChatWindow = ({ selectedChatroom }) => {
     fetchChatroom();
   }, [selectedChatroom]);
 
-  // Separate useEffect for scrolling after messages update
+  {/* Separate useEffect for scrolling after messages update */}
   useEffect(() => {
     if (messages.length > 0) {
       setTimeout(() => {
@@ -84,7 +84,7 @@ const ChatWindow = ({ selectedChatroom }) => {
   };
 
   return (
-    <div className="flex flex-col h-[500px]">
+    <div className="flex flex-col h-[65vh]">
       {selectedChatroom ? (
         <>
           <h2 className="text-xl font-semibold text-center shrink-0 mb-4">
@@ -108,10 +108,14 @@ const ChatWindow = ({ selectedChatroom }) => {
                     {formattedDate}
                   </div>
 
-                  {messagesOnDate.map((msg) => {
+                  {messagesOnDate.map((msg, index) => {
                     const senderID = msg.sender?.userID || "unknownId";
                     const senderUsername = msg.sender?.username || "unknown";
                     const isCurrentUser = String(senderID) === String(user?.id);
+
+                    {/* Store old message data to update username print logic. */}
+                    const previousMessage = messagesOnDate[index - 1];
+                    const isSameSender = previousMessage?.sender?.userID === senderID;
 
                     return (
                       <div
@@ -128,8 +132,8 @@ const ChatWindow = ({ selectedChatroom }) => {
                           }`}
                         >
                           {/* Sender Name for Received Messages */}
-                          {!isCurrentUser && (
-                            <div className="text-xs font-medium text-gray-600 mb-1">
+                          {!isCurrentUser && !isSameSender && (
+                            <div className="text-xs font-medium text-gray-500">
                               {senderUsername}
                             </div>
                           )}
@@ -149,7 +153,7 @@ const ChatWindow = ({ selectedChatroom }) => {
               );
             })}
 
-            {/* Scrolling to newest messages of chatroom. */}
+            {/* Scrolling reference to  the newest messages of chatroom. */}
             <div ref={messagesEndRef} />
           </div>
 
