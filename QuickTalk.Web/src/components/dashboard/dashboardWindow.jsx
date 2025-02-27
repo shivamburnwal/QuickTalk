@@ -26,7 +26,7 @@ const Dashboard = () => {
       }
     };
 
-    fetchChatrooms();
+    setTimeout(fetchChatrooms, 100);
   }, [user]);
 
   const handleChatroomSelect = (chatroom) => {
@@ -34,10 +34,10 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-center bg-gray-200">
-      <div className="p-10 rounded-2xl shadow-2xl w-[70vw] h-[85vh] flex justify-center items-center">
+    <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-blue-500 to-purple-600">
+      <div className="p-10 rounded-2xl shadow-2xl w-[70vw] h-[85vh] flex justify-center items-center backdrop-blur-lg bg-white/10">
         <div className="grid grid-cols-12 w-full h-full gap-4">
-          <div className="col-span-3 p-6 rounded-lg shadow-lg border border-gray-300">
+          <div className="col-span-3 p-6 rounded-lg shadow-xl border border-gray-100 bg-gray-100">
             <ChatroomsList
               chatrooms={chatrooms}
               onChatroomSelect={handleChatroomSelect}
@@ -45,7 +45,7 @@ const Dashboard = () => {
             />
           </div>
 
-          <div className="col-span-9 p-6 rounded-lg shadow-lg border border-gray-300">
+          <div className="col-span-9 p-6 rounded-lg shadow-xl border border-gray-100 bg-gray-100">
             <ChatroomWindow selectedChatroom={selectedChatroom} />
           </div>
         </div>
