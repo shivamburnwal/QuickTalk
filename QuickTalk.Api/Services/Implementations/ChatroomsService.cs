@@ -12,12 +12,12 @@ namespace QuickTalk.Api.Services
     public class ChatroomsService : IChatroomsService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly AuthorizationService _authService;
+        private readonly AuthorizationService _authorizationService;
 
-        public ChatroomsService(IUnitOfWork unitOfWork, AuthorizationService authService)
+        public ChatroomsService(IUnitOfWork unitOfWork, AuthorizationService authorizationService)
         {
             _unitOfWork = unitOfWork;
-            _authService = authService;
+            _authorizationService = authorizationService;
         }
 
         public async Task<Chatroom> GetOrCreateDirectChatRoom(ChatRoomRequestDTO request)
@@ -77,7 +77,7 @@ namespace QuickTalk.Api.Services
                 throw new Exception("Chatroom not found!");
 
             // Validate if user is in the chatroom
-            var accessResult = await _authService.ValidateChatroomAccess(chatroomId);
+            var accessResult = await _authorizationService.ValidateChatroomAccess(chatroomId);
             if (accessResult != null)
                 throw new Exception("User is not a part of this chatroom.");
 
@@ -131,12 +131,12 @@ namespace QuickTalk.Api.Services
         public async Task<bool> UpdateGroupChatroom(int chatroomId, UpdateGroupChatDTO request)
         {
             // Validate if user is in the chatroom
-            var accessResult = await _authService.ValidateChatroomAccess(chatroomId);
+            var accessResult = await _authorizationService.ValidateChatroomAccess(chatroomId);
             if (accessResult != null)
                 throw new Exception("User is not a part of this chatroom.");
 
             // Is User Admin?
-            var isRequesterAdmin = await _authService.ValidateUserAdmin(chatroomId);
+            var isRequesterAdmin = await _authorizationService.ValidateUserAdmin(chatroomId);
             if (!isRequesterAdmin)
                 throw new Exception("Only admins can update group details.");
 
@@ -161,7 +161,7 @@ namespace QuickTalk.Api.Services
                 throw new Exception("Chatroom is not valid.");
 
             // Is User Admin?
-            var isRequesterAdmin = await _authService.ValidateUserAdmin(chatroomId);
+            var isRequesterAdmin = await _authorizationService.ValidateUserAdmin(chatroomId);
             if (!isRequesterAdmin)
                 throw new Exception("Only admins can add users.");
 
@@ -194,7 +194,7 @@ namespace QuickTalk.Api.Services
                 throw new Exception("Chatroom is not valid.");
 
             // Is User Admin?
-            var isRequesterAdmin = await _authService.ValidateUserAdmin(chatroomId);
+            var isRequesterAdmin = await _authorizationService.ValidateUserAdmin(chatroomId);
             if (!isRequesterAdmin)
                 throw new Exception("Only admins can remove users.");
 
@@ -222,7 +222,7 @@ namespace QuickTalk.Api.Services
                 throw new Exception("Chatroom is not valid.");
 
             // Is User Admin?
-            var isRequesterAdmin = await _authService.ValidateUserAdmin(chatroomId);
+            var isRequesterAdmin = await _authorizationService.ValidateUserAdmin(chatroomId);
             if (!isRequesterAdmin)
                 throw new Exception("Only admins can update group details.");
 
@@ -254,7 +254,7 @@ namespace QuickTalk.Api.Services
             if (!isChatroomGroup)
                 throw new Exception("Chatroom is not valid.");
 
-            var userId = _authService.GetAuthenticatedUserId();
+            var userId = _authorizationService.GetAuthenticatedUserId();
             if (userId == null)
                 throw new Exception("User must be logged in.");
 

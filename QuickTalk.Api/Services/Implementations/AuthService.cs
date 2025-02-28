@@ -1,4 +1,5 @@
-﻿using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using QuickTalk.Api.Data.Interfaces;
 using QuickTalk.Api.DTOs;
 using QuickTalk.Api.Models;
@@ -6,6 +7,7 @@ using QuickTalk.Api.Services.Interfaces;
 using QuickTalk.Api.Services.Others;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace QuickTalk.Api.Services.Implementations
@@ -14,14 +16,17 @@ namespace QuickTalk.Api.Services.Implementations
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
+        private readonly AuthorizationService _authorizationService;
 
-        public AuthService(IUnitOfWork unitOfWork, IConfiguration configuration)
+        public AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, 
+            AuthorizationService authorizationService)
         {
             _unitOfWork = unitOfWork;
             _configuration = configuration;
+            _authorizationService = authorizationService;
         }
 
-        public async Task<string> LoginAsync(LoginModel loginModel)
+        public async Task<AuthResponse> LoginAsync(LoginModel loginModel)
         {
             var user = await _unitOfWork.UsersRepository.GetUserByUsernameAsync(loginModel.Username);
             if (user == null || !PasswordService.VerifyPassword(loginModel.Password, user.PasswordHash))
@@ -30,9 +35,38 @@ namespace QuickTalk.Api.Services.Implementations
             // Update LastLogin property
             user.LastLogin = DateTime.UtcNow;
             _unitOfWork.UsersRepository.Update(user);
+
+            // Generate tokens.
+            var accessToken = GenerateJwtToken(user);
+            var refreshToken = GenerateRefreshToken();
+
+            // Check if a refresh token already exists for the user
+            var existingRefreshToken = await _unitOfWork.AuthRepository.GetRefreshTokenByUserIdAsync(user.UserID);
+
+            if (existingRefreshToken != null)
+            {
+                existingRefreshToken.Token = refreshToken;
+                existingRefreshToken.ExpiresAt = DateTime.UtcNow.AddDays(1);
+                _unitOfWork.AuthRepository.UpdateRefreshToken(existingRefreshToken);
+            }
+            else
+            {
+                RefreshToken refreshTokenEntity = new RefreshToken
+                {
+                    UserID = user.UserID,
+                    Token = refreshToken,
+                    ExpiresAt = DateTime.UtcNow.AddDays(1)
+                };
+                await _unitOfWork.AuthRepository.SaveRefreshTokenAsync(refreshTokenEntity);
+            }
             await _unitOfWork.SaveChangesAsync();
 
-            return GenerateJwtToken(user);
+            // Return response containing both tokens.
+            return new AuthResponse
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
         }
 
         public async Task<string> RegisterAsync(RegisterModel registerModel)
@@ -61,6 +95,59 @@ namespace QuickTalk.Api.Services.Implementations
             return "User registered successfully.";
         }
 
+        public async Task<AuthResponse> RefreshTokenAsync(RefreshTokenModel refreshTokenModel)
+        {
+            var refreshToken = await _unitOfWork.AuthRepository.GetRefreshTokenAsync(refreshTokenModel.RefreshToken);
+
+            // Check if refresh token exists and is valid
+            if (refreshToken == null || refreshToken.ExpiresAt < DateTime.UtcNow)
+                throw new UnauthorizedAccessException("Invalid or expired refresh token.");
+
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(refreshToken.UserID);
+            if (user == null)
+                throw new UnauthorizedAccessException("User not found.");
+
+            // Generate new tokens
+            var newAccessToken = GenerateJwtToken(user);
+            var newRefreshToken = GenerateRefreshToken();
+
+            // Remove old refresh token
+            _unitOfWork.AuthRepository.RemoveRefreshToken(refreshToken);
+
+            // Save the new refresh token
+            var newRefreshTokenEntity = new RefreshToken
+            {
+                UserID = user.UserID,
+                Token = newRefreshToken,
+                ExpiresAt = DateTime.UtcNow.AddDays(1)
+            };
+            await _unitOfWork.AuthRepository.SaveRefreshTokenAsync(newRefreshTokenEntity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return new AuthResponse
+            {
+                AccessToken = newAccessToken,
+                RefreshToken = newRefreshToken
+            };
+        }
+
+        public async Task<string> LogoutAsync()
+        {
+            var userId = _authorizationService.GetAuthenticatedUserId();
+            if (userId == null)
+                throw new Exception("User must be logged in.");
+
+            var refreshToken = await _unitOfWork.AuthRepository.GetRefreshTokenByUserIdAsync(userId.Value);
+
+            if (refreshToken == null)
+                throw new UnauthorizedAccessException("No active session found.");
+
+            _unitOfWork.AuthRepository.RemoveRefreshToken(refreshToken);
+            await _unitOfWork.SaveChangesAsync();
+
+            return "User logged out successfully.";
+        }
+
         private string GenerateJwtToken(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -77,7 +164,7 @@ namespace QuickTalk.Api.Services.Implementations
                     new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
                     new Claim(ClaimTypes.Role, user.Role)
                     }),
-                Expires = DateTime.UtcNow.AddHours(1),
+                Expires = DateTime.UtcNow.AddMinutes(15),
                 Issuer = _configuration["Jwt:Issuer"],
                 Audience = _configuration["Jwt:Audience"],
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(encodedKey), SecurityAlgorithms.HmacSha256Signature)
@@ -85,6 +172,11 @@ namespace QuickTalk.Api.Services.Implementations
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
+        }
+
+        private string GenerateRefreshToken()
+        {
+            return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         }
     }
 }

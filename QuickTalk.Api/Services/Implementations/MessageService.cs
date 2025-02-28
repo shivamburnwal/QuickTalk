@@ -9,12 +9,12 @@ namespace QuickTalk.Api.Services.Implementations
     public class MessageService : IMessageService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly AuthorizationService _authService;
+        private readonly AuthorizationService _authorizationService;
 
-        public MessageService(IUnitOfWork unitOfWork, AuthorizationService authService)
+        public MessageService(IUnitOfWork unitOfWork, AuthorizationService authorizationService)
         {
             _unitOfWork = unitOfWork;
-            _authService = authService;
+            _authorizationService = authorizationService;
         }
 
         public async Task<MessageDTO> GetMessageByIdAsync(int messageId)
@@ -42,7 +42,7 @@ namespace QuickTalk.Api.Services.Implementations
 
         public async Task<int> SendMessageAsync(SendMessageRequest request)
         {
-            var senderId = _authService.GetAuthenticatedUserId();
+            var senderId = _authorizationService.GetAuthenticatedUserId();
             if (senderId == null)
                 throw new UnauthorizedAccessException("User is not authorised!");
 
@@ -50,7 +50,7 @@ namespace QuickTalk.Api.Services.Implementations
             if (chatRoom == null)
                 throw new Exception("Chatroom not found");
 
-            var accessResult = await _authService.ValidateChatroomAccess(chatRoom.ChatroomID);
+            var accessResult = await _authorizationService.ValidateChatroomAccess(chatRoom.ChatroomID);
             if (accessResult != null)
                 throw new UnauthorizedAccessException("User not authorized to send messages in this chatroom");
 
@@ -75,7 +75,7 @@ namespace QuickTalk.Api.Services.Implementations
 
         public async Task<string> DeleteMessageAsync(int messageId)
         {
-            var userId = _authService.GetAuthenticatedUserId();
+            var userId = _authorizationService.GetAuthenticatedUserId();
             if (userId == null)
                 throw new UnauthorizedAccessException("User is not authorized!");
 
@@ -100,6 +100,5 @@ namespace QuickTalk.Api.Services.Implementations
             await _unitOfWork.SaveChangesAsync();
             return "Message Deleted Succeddfully.";
         }
-
     }
 }

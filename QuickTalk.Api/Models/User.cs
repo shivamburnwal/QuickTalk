@@ -12,6 +12,7 @@
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? LastLogin { get; set; }
 
+        public RefreshToken RefreshToken { get; set; }
         public ICollection<UserChatroom> UserChatrooms { get; set; }
         public ICollection<Message> Messages { get; set; }
         public ICollection<MessageReaction> MessageReactions { get; set; }

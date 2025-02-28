@@ -12,12 +12,19 @@ namespace QuickTalk.Api.Extensions
             .HasIndex(u => u.Username)
             .IsUnique();
 
-            // One-to-many: User -> Message
-            modelBuilder.Entity<Message>()
-                .HasOne(m => m.User)
-                .WithMany(u => u.Messages)
-                .HasForeignKey(m => m.UserID)
-                .OnDelete(DeleteBehavior.SetNull);
+            #region RefreshToken
+            // One-to-one: User -> RefreshToken
+            modelBuilder.Entity<RefreshToken>()
+                .HasOne(rt => rt.User)
+                .WithOne(u => u.RefreshToken)
+                .HasForeignKey<RefreshToken>(rt => rt.UserID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Ensure UserID in RefreshToken is unique
+            modelBuilder.Entity<RefreshToken>()
+                .HasIndex(rt => rt.UserID)
+                .IsUnique();
+            #endregion
 
             #region Conversation RelationShips
             /*
@@ -49,13 +56,23 @@ namespace QuickTalk.Api.Extensions
             .Property(c => c.RoomType)
             .HasConversion<string>();
 
+            #region Message
+            // One-to-many: User -> Message
+            modelBuilder.Entity<Message>()
+                .HasOne(m => m.User)
+                .WithMany(u => u.Messages)
+                .HasForeignKey(m => m.UserID)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // One-to-many: Chatroom -> Message
             modelBuilder.Entity<Message>()
                 .HasOne(m => m.Chatroom)
                 .WithMany(c => c.Messages)
                 .HasForeignKey(m => m.ChatroomID)
                 .OnDelete(DeleteBehavior.Cascade);
+            #endregion
 
+            #region UserChatroom
             // Many-to-many: User -> Chatroom (via UserChatroom)
             modelBuilder.Entity<UserChatroom>()
                 .HasKey(uc => new { uc.UserID, uc.ChatroomID });
@@ -69,7 +86,9 @@ namespace QuickTalk.Api.Extensions
                 .HasOne(uc => uc.Chatroom)
                 .WithMany(c => c.UserChatrooms)
                 .HasForeignKey(uc => uc.ChatroomID);
+            #endregion
 
+            #region MessageReaction
             // One-to-many: Message -> MessageReaction
             modelBuilder.Entity<MessageReaction>()
                 .HasOne(mr => mr.Message)
@@ -82,6 +101,7 @@ namespace QuickTalk.Api.Extensions
                 .WithMany(u => u.MessageReactions)
                 .HasForeignKey(mr => mr.UserID)
                 .OnDelete(DeleteBehavior.SetNull);
+            #endregion
         }
     }
 }

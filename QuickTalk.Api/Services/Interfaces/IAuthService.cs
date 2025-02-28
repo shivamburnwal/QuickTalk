@@ -6,7 +6,9 @@ namespace QuickTalk.Api.Services.Interfaces
 {
     public interface IAuthService
     {
-        Task<string> LoginAsync(LoginModel loginModel);
+        Task<AuthResponse> LoginAsync(LoginModel loginModel);
         Task<string> RegisterAsync(RegisterModel registerModel);
+        Task<AuthResponse> RefreshTokenAsync(RefreshTokenModel refreshTokenModel);
+        Task<string> LogoutAsync();
     }
 }

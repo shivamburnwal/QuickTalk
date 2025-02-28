@@ -17,6 +17,7 @@ namespace QuickTalk.Api.Data
         public DbSet<Message> Messages { get; set; }
         public DbSet<UserChatroom> UserChatrooms { get; set; }
         public DbSet<MessageReaction> MessageReactions { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         //public DbSet<Conversation> Conversations { get; set; }
 
