@@ -24,8 +24,18 @@ namespace QuickTalk.Api.Controllers
         {
             try
             {
-                var response = await _authService.LoginAsync(loginModel);
-                return Ok(response);
+                AuthResponse response = await _authService.LoginAsync(loginModel);
+
+                // Set Refresh Token as HttpOnly Cookie instead of sending to Frontend.
+                Response.Cookies.Append("refreshToken", response.RefreshToken, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Expires = DateTime.UtcNow.AddDays(1)
+                });
+
+                return Ok(new { token = response.AccessToken });
             }
             catch (UnauthorizedAccessException)
             {
@@ -52,12 +62,27 @@ namespace QuickTalk.Api.Controllers
         }
 
         [HttpPost("refresh-token")]
-        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenModel refreshTokenModel)
+        public async Task<IActionResult> RefreshToken()
         {
             try
             {
-                var response = await _authService.RefreshTokenAsync(refreshTokenModel);
-                return Ok(response);
+                // Read refresh token from HttpOnly Cookie
+                var refreshToken = Request.Cookies["refreshToken"];
+                if (string.IsNullOrEmpty(refreshToken))
+                    return Unauthorized("Refresh token missing.");
+
+                var response = await _authService.RefreshTokenAsync(refreshToken);
+
+                // Set new refresh token
+                Response.Cookies.Append("refreshToken", response.RefreshToken, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Expires = DateTime.UtcNow.AddDays(1)
+                });
+
+                return Ok(new { token = response.AccessToken });
             }
             catch (UnauthorizedAccessException)
             {

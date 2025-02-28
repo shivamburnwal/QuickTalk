@@ -52,7 +52,8 @@ namespace QuickTalk.Api.Extensions
                 {
                     policy.WithOrigins(corsOrigins)
                           .AllowAnyHeader()
-                          .AllowAnyMethod();
+                          .AllowAnyMethod()
+                          .AllowCredentials();
                 });
             });
 

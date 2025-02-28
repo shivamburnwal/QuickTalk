@@ -95,9 +95,9 @@ namespace QuickTalk.Api.Services.Implementations
             return "User registered successfully.";
         }
 
-        public async Task<AuthResponse> RefreshTokenAsync(RefreshTokenModel refreshTokenModel)
+        public async Task<AuthResponse> RefreshTokenAsync(string refreshTokenStr)
         {
-            var refreshToken = await _unitOfWork.AuthRepository.GetRefreshTokenAsync(refreshTokenModel.RefreshToken);
+            var refreshToken = await _unitOfWork.AuthRepository.GetRefreshTokenAsync(refreshTokenStr);
 
             // Check if refresh token exists and is valid
             if (refreshToken == null || refreshToken.ExpiresAt < DateTime.UtcNow)
@@ -155,6 +155,8 @@ namespace QuickTalk.Api.Services.Implementations
                 ?? throw new InvalidOperationException("JWT Key is not configured.");
             var encodedKey = Encoding.UTF8.GetBytes(key);
 
+            var expiryMinutes = _configuration.GetValue<int>("Jwt:ExpiryMinutes");
+
             // create token.
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -164,7 +166,7 @@ namespace QuickTalk.Api.Services.Implementations
                     new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
                     new Claim(ClaimTypes.Role, user.Role)
                     }),
-                Expires = DateTime.UtcNow.AddMinutes(15),
+                Expires = DateTime.UtcNow.AddMinutes(expiryMinutes),
                 Issuer = _configuration["Jwt:Issuer"],
                 Audience = _configuration["Jwt:Audience"],
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(encodedKey), SecurityAlgorithms.HmacSha256Signature)

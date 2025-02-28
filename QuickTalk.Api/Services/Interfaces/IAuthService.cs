@@ -8,7 +8,7 @@ namespace QuickTalk.Api.Services.Interfaces
     {
         Task<AuthResponse> LoginAsync(LoginModel loginModel);
         Task<string> RegisterAsync(RegisterModel registerModel);
-        Task<AuthResponse> RefreshTokenAsync(RefreshTokenModel refreshTokenModel);
+        Task<AuthResponse> RefreshTokenAsync(string refreshToken);
         Task<string> LogoutAsync();
     }
 }
