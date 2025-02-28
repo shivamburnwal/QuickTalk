@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { setToken } from '../utils/auth';
 import { loginUser } from '../services/api';
 import { createLoginDto } from '../dto/AuthDTOs'
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from "jwt-decode";
 import { useAuth } from '../context/AuthContext';
 
