@@ -84,7 +84,7 @@ const ChatWindow = ({ selectedChatroom }) => {
   };
 
   return (
-    <div className="flex flex-col h-[65vh]">
+    <div className="flex flex-col h-[72vh]">
       {selectedChatroom ? (
         <>
           <h2 className="text-xl font-semibold text-center shrink-0 mb-4">
