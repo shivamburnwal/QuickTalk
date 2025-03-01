@@ -6,6 +6,6 @@ export const setToken = (token) => {
   localStorage.setItem('authToken', token);
 };
 
-export const logout = () => {
+export const removeToken = () => {
   localStorage.removeItem('authToken');
 };

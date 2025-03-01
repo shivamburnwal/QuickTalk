@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getToken, setToken, logout } from '../utils/auth';
+import { getToken, setToken, removeToken } from '../utils/auth';
 
 // Create base API request.
 const baseApiUrl = import.meta.env.VITE_API_URL;
@@ -32,11 +32,9 @@ api.interceptors.request.use(
 
 // Check and update token if required.
 export const setupInterceptor = (navigate) => {
-  console.log("Interceptor Setup Called!");
   api.interceptors.response.use(
     (response) => response,
     async (error) => {
-      console.log("Interceptor Caught Error:", error);
       const originalRequest = error.config;
   
       if(error.response && error.response.status == 401 && !originalRequest._retry){
@@ -44,7 +42,7 @@ export const setupInterceptor = (navigate) => {
         // Prevent retrying the refresh token request itself
         if (originalRequest.url.includes('/Auth/refresh-token')) {
           console.log("Refresh token is invalid or expired. Logging out...");
-          logout();
+          removeToken();
           navigate('/login');
           return Promise.reject(error);
         }
@@ -64,7 +62,7 @@ export const setupInterceptor = (navigate) => {
           return api(originalRequest);
         } 
         catch (refreshError) {
-          logout();
+          removeToken();
           navigate('/login');
           return Promise.reject(refreshError);
         }
@@ -77,8 +75,16 @@ export const setupInterceptor = (navigate) => {
 // API Callings..
 export const registerUser = async (userData) => api.post("/Auth/register", userData);
 export const loginUser = async (loginData) => api.post("/Auth/login", loginData);
-export const logoutUser = async () => api.post("/Auth/logout");
 export const refreshToken = async () => api.post("/Auth/refresh-token");
+export const logoutUser = async () => {
+  try {
+    await api.post("/Auth/logout");
+    removeToken();
+  } catch (error) {
+    console.error("Logout failed:", error);
+    throw error;
+  }
+};
 
 export const getDirectChatrooms = async (userId) => api.get(`/Chatrooms/user/${userId}/Direct`);
 export const getGroupChatrooms = async (userId) => api.get(`/Chatrooms/user/${userId}/Group`);

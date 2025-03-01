@@ -25,7 +25,6 @@ const LoginPage = () => {
     try {
       const requestData = createLoginDto(formData.email, formData.password);
       const response = await loginUser(requestData);
-      console.log(response);
       
       // Decode token and update user immediately
       const decoded = jwtDecode(response.data.token);

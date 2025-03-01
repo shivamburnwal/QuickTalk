@@ -9,7 +9,7 @@ const ChatroomsList = ({ chatrooms, onChatroomSelect, selectedChatroomId }) => {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-4">Chatrooms</h2>
+      <h2 className="text-xl font-semibold mb-4">Chats</h2>
       <div className="relative w-full mb-4">
         <div className="absolute inset-y-0 left-2 flex items-center text-gray-500">
           🔍
@@ -25,7 +25,7 @@ const ChatroomsList = ({ chatrooms, onChatroomSelect, selectedChatroomId }) => {
       <ul>
         {filteredChatrooms.map((chatroom) => (
           <li
-            key={chatroom.id}
+            key={chatroom.chatroomID}
             onClick={() => {
               onChatroomSelect(chatroom);
             }}
