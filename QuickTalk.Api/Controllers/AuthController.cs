@@ -11,12 +11,10 @@ namespace QuickTalk.Api.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
-        private readonly AuthorizationService _authorizationService;
 
-        public AuthController(IAuthService authService, AuthorizationService authorizationService)
+        public AuthController(IAuthService authService)
         {
             _authService = authService;
-            _authorizationService = authorizationService;
         }
 
         [HttpPost("login")]
@@ -101,6 +99,16 @@ namespace QuickTalk.Api.Controllers
             try
             {
                 var message = await _authService.LogoutAsync();
+
+                // Clear the refresh token cookie
+                Response.Cookies.Append("refreshToken", "", new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Expires = DateTime.UtcNow.AddDays(-1)
+                });
+
                 return Ok(new { Message = message });
             }
             catch (Exception ex)
