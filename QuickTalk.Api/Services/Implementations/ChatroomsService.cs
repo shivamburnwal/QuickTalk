@@ -119,11 +119,18 @@ namespace QuickTalk.Api.Services
             if (chatrooms == null || !chatrooms.Any())
                 return new List<UserChatroomsViewDTO>();
 
-            var response = chatrooms.Select(c => new UserChatroomsViewDTO
+            var response = new List<UserChatroomsViewDTO>();
+
+            foreach (var room in chatrooms)
             {
-                ChatroomID = c.ChatroomID,
-                Name = c.Name,
-            }).ToList();
+                var lastMessage = await _unitOfWork.MessageRepository.GetLastMessageForChatroom(room.ChatroomID);
+                response.Add(new UserChatroomsViewDTO {
+                    ChatroomID = room.ChatroomID,
+                    Name = room.Name,
+                    LastMessage = lastMessage,
+                    LastModified = room.LastModified,
+                });
+            }
 
             return response;
         }

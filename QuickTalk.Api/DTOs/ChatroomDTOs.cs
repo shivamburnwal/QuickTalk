@@ -33,6 +33,8 @@
     {
         public int ChatroomID { get; set; }
         public string Name { get; set; }
+        public string LastMessage { get; set; }
+        public DateTime LastModified { get; set; }
         public string RoomType { get; set; }
     }
 }

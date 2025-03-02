@@ -18,5 +18,16 @@ namespace QuickTalk.Api.Repositories.Implementations
                 .Select(m => m.ChatroomID)
                 .FirstOrDefaultAsync();
         }
+
+        public async Task<string> GetLastMessageForChatroom(int chatroomId)
+        {
+            var lastMessage = await _dbSet
+                .Where(m => m.ChatroomID == chatroomId)
+                .OrderByDescending(m => m.SentAt)
+                .Select(m => m.Content)
+                .FirstOrDefaultAsync();
+
+            return lastMessage ?? "";
+        }
     }
 }
