@@ -55,7 +55,7 @@ const Dashboard = () => {
       <div className="p-6 rounded-2xl shadow-2xl w-[75vw] h-[95vh] flex flex-col bg-white/10 border-gray-100 backdrop-blur-lg">
         {/* Header Section */}
         <div className="flex justify-between items-center w-full px-4 py-2 bg-gray-100 shadow-md border-b border-gray-300 rounded-t-lg">
-          <h1 className="text-xl p-2 font-semibold text-gray-700">Quick Talk</h1>
+          <h1 className="text-2xl p-2 font-semibold text-gray-700">Quick Talk</h1>
           <button
             onClick={handleLogout}
             className="p-2 rounded-full shadow hover:bg-indigo-400 transition flex items-center justify-center"
