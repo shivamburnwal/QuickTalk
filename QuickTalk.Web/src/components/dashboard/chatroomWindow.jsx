@@ -105,13 +105,14 @@ const ChatWindow = ({ selectedChatroom }) => {
 
       newConnection.on("ReceiveMessage", (chatroomId, sender, newMessage) => {
         console.log(sender);
-        if (
-          chatroomId === selectedChatroom.chatroomID.toString() &&
-          sender.username !== user.username
-        ) {
+        if (chatroomId === selectedChatroom.chatroomID.toString()) {
           setMessages((prev) => [
             ...prev,
-            { sender: sender, content: newMessage, sentAt: new Date().toISOString() },
+            {
+              sender: sender,
+              content: newMessage,
+              sentAt: new Date().toISOString(),
+            },
           ]);
         }
       });
@@ -149,42 +150,31 @@ const ChatWindow = ({ selectedChatroom }) => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (message.trim() !== "") {
-      const newMessage = createSendMessageRequestDto(
-        message,
-        selectedChatroom.chatroomID
-      );
-
-      try {
-        var response = await sendMessage(newMessage);
-        if (response?.data?.messageId) {
-          const messageId = response.data.messageId;
-
-          const fetchedMessage = await getMessage(messageId);
-          if (fetchedMessage?.data) {
-            setMessages((prevMessages) => [
-              ...prevMessages,
-              { ...fetchedMessage.data.message },
-            ]);
-          }
-        }
-
-        // Send real-time notification via SignalR
-        if (connection) {
-          connection.invoke(
-            "SendMessage",
-            selectedChatroom.chatroomID.toString(),
-            user.username,
-            message
-          );
-        }
-
-        setMessage("");
-      } catch (error) {
-        console.error("Error sending message:", error);
+    if (message.trim() === "") return;
+  
+    const newMessage = createSendMessageRequestDto(
+      message,
+      selectedChatroom.chatroomID
+    );
+  
+    try {
+      await sendMessage(newMessage);
+  
+      // Send real-time notification via SignalR
+      if (connection) {
+        connection.invoke(
+          "SendMessage",
+          selectedChatroom.chatroomID.toString(),
+          user.username,
+          message
+        );
       }
+  
+      setMessage("");
+    } catch (error) {
+      console.error("Error sending message:", error);
     }
-  };
+  };  
 
   return (
     <div className="flex flex-col h-[72vh]">
