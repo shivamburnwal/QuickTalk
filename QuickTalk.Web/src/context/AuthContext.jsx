@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
         setUser({
           id: decoded.nameid,
           username: decoded.unique_name,
+          email: decoded.email,
           token: token,
         });
       } catch (error) {

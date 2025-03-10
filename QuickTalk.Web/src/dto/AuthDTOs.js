@@ -1,6 +1,6 @@
 
 export const createLoginDto = (email, password) => ({
-    username: email,
+    email: email,
     password: password,
 });
 

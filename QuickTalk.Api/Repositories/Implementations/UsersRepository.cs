@@ -13,7 +13,12 @@ namespace QuickTalk.Api.Repositories.Implementations
 
         public async Task<User?> GetUserByUsernameAsync(string username)
         {
-            return await _dbSet.FirstOrDefaultAsync(u => u.Email == username);
+            return await _dbSet.FirstOrDefaultAsync(u => u.Username == username);
+        }
+
+        public async Task<User?> GetUserByEmailAsync(string email)
+        {
+            return await _dbSet.FirstOrDefaultAsync(u => u.Email == email);
         }
 
         public async Task<bool> IsUsernameTakenAsync(string username)

@@ -31,6 +31,7 @@ const LoginPage = () => {
       setUser({
         id: decoded.nameid,
         username: decoded.unique_name,
+        email: decoded.email,
         token: response.data.token,
       });
       setToken(response.data.token);

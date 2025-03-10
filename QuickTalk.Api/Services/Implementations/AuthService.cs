@@ -28,7 +28,7 @@ namespace QuickTalk.Api.Services.Implementations
 
         public async Task<AuthResponse> LoginAsync(LoginModel loginModel)
         {
-            var user = await _unitOfWork.UsersRepository.GetUserByUsernameAsync(loginModel.Username);
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(loginModel.Email);
             if (user == null || !PasswordService.VerifyPassword(loginModel.Password, user.PasswordHash))
                 throw new UnauthorizedAccessException("Invalid username or password.");
 
@@ -162,7 +162,8 @@ namespace QuickTalk.Api.Services.Implementations
             {
                 Subject = new ClaimsIdentity(new Claim[]
                     {
-                    new Claim(ClaimTypes.Name, user.Email),
+                    new Claim(ClaimTypes.Name, user.Username),
+                    new Claim(ClaimTypes.Email, user.Email),
                     new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
                     new Claim(ClaimTypes.Role, user.Role)
                     }),

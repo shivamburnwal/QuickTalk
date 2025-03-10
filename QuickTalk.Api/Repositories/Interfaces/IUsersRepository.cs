@@ -6,6 +6,7 @@ namespace QuickTalk.Api.Repositories.Interfaces
     public interface IUsersRepository : IGenericRepository<User>
     {
         Task<User?> GetUserByUsernameAsync(string username);
+        Task<User?> GetUserByEmailAsync(string email);
         Task<bool> IsUsernameTakenAsync(string username);
         Task<bool> IsEmailTakenAsync(string email);
         Task<IEnumerable<User>> SearchUsersByNameAsync(string name);
