@@ -1,4 +1,5 @@
 using QuickTalk.Api.Extensions;
+using QuickTalk.Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,5 +24,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHub<ChatHub>("/api/chatHub");
 
 app.Run();

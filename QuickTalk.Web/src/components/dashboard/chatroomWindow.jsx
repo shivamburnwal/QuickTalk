@@ -3,15 +3,18 @@ import { getChatroom, getMessage, sendMessage } from "../../services/api";
 import { createSendMessageRequestDto } from "../../dto/MessageDTOs";
 import { useAuth } from "../../context/AuthContext";
 import { format, isToday, isYesterday, parseISO } from "date-fns";
+import * as signalR from "@microsoft/signalr";
 
 const ChatWindow = ({ selectedChatroom }) => {
   const { user } = useAuth();
   const messagesEndRef = useRef(null);
+  const prevChatroomId = useRef(null); // Store previous chatroom ID
 
-  const [chatroom, setChatroom] = useState(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
+  const [connection, setConnection] = useState(null);
 
+  // Group messages by date
   const groupMessagesByDate = (messages) => {
     const grouped = {};
     messages.forEach((msg) => {
@@ -24,12 +27,12 @@ const ChatWindow = ({ selectedChatroom }) => {
 
   const groupedMessages = groupMessagesByDate(messages);
 
+  // Fetch chatroom messages when chatroom is selected
   useEffect(() => {
     const fetchChatroom = async () => {
       if (selectedChatroom) {
         try {
           const response = await getChatroom(selectedChatroom.chatroomID);
-          setChatroom(response.data);
           setMessages(response.data.messages);
         } catch (error) {
           console.error("Error fetching chatroom:", error);
@@ -41,7 +44,97 @@ const ChatWindow = ({ selectedChatroom }) => {
     fetchChatroom();
   }, [selectedChatroom]);
 
-  {/* Separate useEffect for scrolling after messages update */}
+  // Initialize SignalR connection when chatroom changes
+  useEffect(() => {
+    if (!selectedChatroom) return;
+
+    let isCancelled = false; // Prevent actions if component unmounts
+
+    // Leave previous chatroom & ensure previous connection is fully stopped
+    const stopPreviousConnection = async () => {
+      if (connection && prevChatroomId.current) {
+        try {
+          if (connection.state === signalR.HubConnectionState.Connected) {
+            await connection.invoke(
+              "LeaveChatroom",
+              prevChatroomId.current.toString()
+            );
+            console.log(`Left chatroom: ${prevChatroomId.current}`);
+          }
+        } catch (err) {
+          console.error("LeaveChatroom error:", err);
+        } finally {
+          try {
+            await connection.stop();
+            console.log("Previous connection stopped");
+          } catch (err) {
+            console.error("Connection stop error:", err);
+          }
+        }
+      }
+    };
+
+    stopPreviousConnection().then(() => {
+      if (isCancelled) return;
+
+      // Setup new connection
+      const newConnection = new signalR.HubConnectionBuilder()
+        .withUrl(import.meta.env.VITE_API_URL + "/chatHub", {
+          withCredentials: true,
+        })
+        .withAutomaticReconnect()
+        .configureLogging(signalR.LogLevel.Information)
+        .build();
+
+      newConnection
+        .start()
+        .then(() => {
+          if (isCancelled) return;
+          console.log("Connected to SignalR");
+
+          // Join new chatroom
+          return newConnection.invoke(
+            "JoinChatroom",
+            selectedChatroom.chatroomID.toString()
+          );
+        })
+        .then(() =>
+          console.log(`Joined chatroom: ${selectedChatroom.chatroomID}`)
+        )
+        .catch((err) => console.error("JoinChatroom error:", err));
+
+      newConnection.on("ReceiveMessage", (chatroomId, sender, newMessage) => {
+        console.log(sender);
+        if (
+          chatroomId === selectedChatroom.chatroomID.toString() &&
+          sender.username !== user.username
+        ) {
+          setMessages((prev) => [
+            ...prev,
+            { sender: sender, content: newMessage, sentAt: new Date().toISOString() },
+          ]);
+        }
+      });
+
+      setConnection(newConnection);
+      prevChatroomId.current = selectedChatroom.chatroomID; // Store previous chatroom ID
+    });
+
+    return () => {
+      isCancelled = true;
+
+      if (connection?.state === signalR.HubConnectionState.Connected) {
+        connection
+          .invoke("LeaveChatroom", selectedChatroom.chatroomID.toString())
+          .then(() => connection.stop())
+          .catch((err) => console.error("Cleanup error:", err));
+      } else {
+        connection?.stop().catch((err) => console.error("Stop error:", err));
+      }
+    };
+  }, [selectedChatroom]);
+
+  // Scroll through messages uptil latest one.
   useEffect(() => {
     if (messages.length > 0) {
       setTimeout(() => {
@@ -74,6 +167,16 @@ const ChatWindow = ({ selectedChatroom }) => {
               { ...fetchedMessage.data.message },
             ]);
           }
+        }
+
+        // Send real-time notification via SignalR
+        if (connection) {
+          connection.invoke(
+            "SendMessage",
+            selectedChatroom.chatroomID.toString(),
+            user.username,
+            message
+          );
         }
 
         setMessage("");
@@ -113,9 +216,10 @@ const ChatWindow = ({ selectedChatroom }) => {
                     const senderUsername = msg.sender?.username || "unknown";
                     const isCurrentUser = String(senderID) === String(user?.id);
 
-                    {/* Store old message data to update username print logic. */}
+                    // Store old message data to update username print logic.
                     const previousMessage = messagesOnDate[index - 1];
-                    const isSameSender = previousMessage?.sender?.userID === senderID;
+                    const isSameSender =
+                      previousMessage?.sender?.userID === senderID;
 
                     return (
                       <div

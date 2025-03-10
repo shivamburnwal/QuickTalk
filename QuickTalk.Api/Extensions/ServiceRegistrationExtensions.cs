@@ -29,6 +29,7 @@ namespace QuickTalk.Api.Extensions
             services.AddHttpContextAccessor();
             services.AddControllers();
             services.AddSwaggerService();                      // Add Swagger
+            services.AddSignalR();                             // Add SignalR
 
             // Register Services
             services.AddScoped<IAuthService, AuthService>();
