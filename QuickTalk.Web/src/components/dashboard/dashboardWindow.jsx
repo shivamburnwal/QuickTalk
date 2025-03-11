@@ -5,6 +5,7 @@ import ChatroomsList from "./chatroomsList";
 import ChatroomWindow from "./chatroomWindow";
 import { useAuth } from "../../context/AuthContext";
 import { IoMdLogOut } from "react-icons/io";
+import * as signalR from "@microsoft/signalr";
 
 const Dashboard = () => {
   const { user, setUser } = useAuth();
@@ -13,6 +14,11 @@ const Dashboard = () => {
   const [chatrooms, setChatrooms] = useState([]);
   const [selectedChatroom, setSelectedChatroom] = useState(null);
   const [chatroomsUpdated, setChatroomsUpdated] = useState(false);
+
+  // state to store new messages for each chatroom
+  const [receivedMessages, setReceivedMessages] = useState({});
+  const [connection, setConnection] = useState(null);
+  const [unreadCounts, setUnreadCounts] = useState({});
 
   useEffect(() => {
     if (!user?.token) return;
@@ -33,12 +39,74 @@ const Dashboard = () => {
     setTimeout(fetchChatrooms, 100);
   }, [user, chatroomsUpdated]);
 
+  useEffect(() => {
+    if (!user?.token) return;
+  
+    const newConnection = new signalR.HubConnectionBuilder()
+      .withUrl(import.meta.env.VITE_API_URL + "/chatHub", {
+        withCredentials: true,
+      })
+      .withAutomaticReconnect()
+      .configureLogging(signalR.LogLevel.Information)
+      .build();
+  
+    newConnection
+      .start()
+      .then(() => {
+        console.log("Connected to SignalR");
+        chatrooms.forEach((chatroom) => {
+          newConnection
+            .invoke("JoinChatroom", chatroom.chatroomID.toString())
+            .then(() => console.log(`Joined chatroom: ${chatroom.chatroomID}`))
+            .catch((err) => console.error("JoinChatroom error:", err));
+        });
+      })
+      .catch((err) => console.error("SignalR Connection Error:", err));
+  
+    newConnection.on("ReceiveMessage", (chatroomId, sender, newMessage) => {
+      setReceivedMessages((prev) => ({
+        ...prev,
+        [chatroomId]: [
+          ...(prev[chatroomId] || []),
+          { sender, content: newMessage, sentAt: new Date().toISOString() },
+        ],
+      }));
+  
+      setUnreadCounts((prevCounts) => ({
+        ...prevCounts,
+        [chatroomId]: (prevCounts[chatroomId] || 0) + 1,
+      }));
+  
+      setChatroomsUpdated((prev) => !prev);
+    });
+  
+    setConnection(newConnection);
+  
+    return () => {
+      newConnection
+        .stop()
+        .catch((err) => console.error("Error stopping connection:", err));
+    };
+  }, [chatrooms]);
+
   const handleChatroomSelect = (chatroom) => {
     setSelectedChatroom(chatroom);
+
+    // Mark messages as "seen" (reset count)
+    setUnreadCounts((prev) => ({
+      ...prev,
+      [chatroom.chatroomID]: 0,
+      [selectedChatroom?.chatroomID]: 0,
+    }));
   };
 
   const handleLogout = async () => {
     try {
+      if (connection) {
+        await connection.stop();
+        console.log("SignalR connection stopped.");
+      }
+
       await logoutUser();
 
       // Navigate to login and remove user state.
@@ -73,12 +141,16 @@ const Dashboard = () => {
               chatrooms={chatrooms}
               onChatroomSelect={handleChatroomSelect}
               selectedChatroomId={selectedChatroom?.chatroomID}
+              unreadCounts={unreadCounts}
             />
           </div>
 
           <div className="col-span-9 p-6 shadow-xl border border-gray-300 bg-gray-100 rounded-br-lg">
             <ChatroomWindow
               selectedChatroom={selectedChatroom}
+              receivedMessages={receivedMessages}
+              setReceivedMessages={setReceivedMessages}
+              connection={connection}
               setChatroomsUpdated={setChatroomsUpdated}
             />
           </div>

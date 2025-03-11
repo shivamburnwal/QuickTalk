@@ -3,7 +3,12 @@ import { FiEdit } from "react-icons/fi";
 import { MdKeyboardBackspace } from "react-icons/md";
 import { format, parseISO } from "date-fns";
 
-const ChatroomsList = ({ chatrooms, onChatroomSelect, selectedChatroomId }) => {
+const ChatroomsList = ({
+  chatrooms,
+  onChatroomSelect,
+  selectedChatroomId,
+  unreadCounts,
+}) => {
   const [searchText, setSearchText] = useState("");
   const [groupName, setGroupName] = useState("");
   const [activeModal, setActiveModal] = useState(null);
@@ -126,21 +131,26 @@ const ChatroomsList = ({ chatrooms, onChatroomSelect, selectedChatroomId }) => {
         {filteredChatrooms.map((chatroom) => (
           <li
             key={chatroom.chatroomID}
-            onClick={() => {
-              onChatroomSelect(chatroom);
-            }}
-            className={`cursor-pointer p-2 rounded-lg mb-2 transition-all duration-200 flex flex-col justify-center h-16 ${
+            onClick={() => onChatroomSelect(chatroom)}
+            className={`relative cursor-pointer p-2 rounded-lg mb-2 transition-all duration-200 flex flex-col justify-center h-16 ${
               selectedChatroomId === chatroom.chatroomID
                 ? "bg-indigo-400 text-white"
                 : "bg-gray-100 hover:bg-gray-200 hover:shadow-sm border border-gray-200"
             }`}
           >
+            {/* Unread counter to chatroom. */}
+            {unreadCounts[chatroom.chatroomID] > 0 && selectedChatroomId !== chatroom.chatroomID && (
+              <span className="absolute top-6 right-3 flex items-center justify-center bg-green-400 text-white text-[10px] font-bold w-4 h-4 rounded-full shadow-md">
+                {unreadCounts[chatroom.chatroomID]}
+              </span>
+            )}
+
             <div className="font-semibold">{chatroom.name}</div>
             <div className="flex justify-between items-center text-sm truncate">
               <span className="truncate max-w-[70%]">
                 {chatroom.lastMessage}
               </span>
-              <span className="text-[10px]">
+              <span className="text-[8px] mt-4">
                 {format(parseISO(chatroom.lastModified), "hh:mm")}
               </span>
             </div>

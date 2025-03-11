@@ -1,18 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
-import { getChatroom, getMessage, sendMessage } from "../../services/api";
+import { getChatroom, sendMessage } from "../../services/api";
 import { createSendMessageRequestDto } from "../../dto/MessageDTOs";
 import { useAuth } from "../../context/AuthContext";
 import { format, isToday, isYesterday, parseISO } from "date-fns";
-import * as signalR from "@microsoft/signalr";
 
-const ChatWindow = ({ selectedChatroom, setChatroomsUpdated }) => {
+const ChatWindow = ({ selectedChatroom, receivedMessages, setReceivedMessages, connection, setChatroomsUpdated }) => {
   const { user } = useAuth();
   const messagesEndRef = useRef(null);
-  const prevChatroomId = useRef(null); // Store previous chatroom ID
 
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [connection, setConnection] = useState(null);
 
   // Group messages by date
   const groupMessagesByDate = (messages) => {
@@ -44,99 +41,23 @@ const ChatWindow = ({ selectedChatroom, setChatroomsUpdated }) => {
     fetchChatroom();
   }, [selectedChatroom]);
 
-  // Initialize SignalR connection when chatroom changes
+  // Process new received messages
   useEffect(() => {
-    if (!selectedChatroom) return;
+    if (!selectedChatroom || !receivedMessages[selectedChatroom.chatroomID])
+      return;
 
-    let isCancelled = false; // Prevent actions if component unmounts
+    setMessages((prev) => [
+      ...prev,
+      ...receivedMessages[selectedChatroom.chatroomID], // Add only new messages
+    ]);
 
-    // Leave previous chatroom & ensure previous connection is fully stopped
-    const stopPreviousConnection = async () => {
-      if (connection && prevChatroomId.current) {
-        try {
-          if (connection.state === signalR.HubConnectionState.Connected) {
-            await connection.invoke(
-              "LeaveChatroom",
-              prevChatroomId.current.toString()
-            );
-            console.log(`Left chatroom: ${prevChatroomId.current}`);
-          }
-        } catch (err) {
-          console.error("LeaveChatroom error:", err);
-        } finally {
-          try {
-            await connection.stop();
-            console.log("Previous connection stopped");
-          } catch (err) {
-            console.error("Connection stop error:", err);
-          }
-        }
-      }
-    };
-
-    stopPreviousConnection().then(() => {
-      if (isCancelled) return;
-
-      // Setup new connection
-      const newConnection = new signalR.HubConnectionBuilder()
-        .withUrl(import.meta.env.VITE_API_URL + "/chatHub", {
-          withCredentials: true,
-        })
-        .withAutomaticReconnect()
-        .configureLogging(signalR.LogLevel.Information)
-        .build();
-
-      newConnection
-        .start()
-        .then(() => {
-          if (isCancelled) return;
-          console.log("Connected to SignalR");
-
-          // Join new chatroom
-          return newConnection.invoke(
-            "JoinChatroom",
-            selectedChatroom.chatroomID.toString()
-          );
-        })
-        .then(() =>
-          console.log(`Joined chatroom: ${selectedChatroom.chatroomID}`)
-        )
-        .catch((err) => console.error("JoinChatroom error:", err));
-
-      newConnection.on("ReceiveMessage", (chatroomId, sender, newMessage) => {
-        console.log(sender);
-        if (chatroomId === selectedChatroom.chatroomID.toString()) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              sender: sender,
-              content: newMessage,
-              sentAt: new Date().toISOString(),
-            },
-          ]);
-
-          // Update chatrooms list.
-          setChatroomsUpdated((prev) => !prev);
-        }
-      });
-
-      setConnection(newConnection);
-      prevChatroomId.current = selectedChatroom.chatroomID; // Store previous chatroom ID
+    // Remove processed messages
+    setReceivedMessages((prev) => {
+      const newReceived = { ...prev };
+      delete newReceived[selectedChatroom.chatroomID]; // Clear processed messages
+      return newReceived;
     });
-
-    return () => {
-      isCancelled = true;
-
-      if (connection?.state === signalR.HubConnectionState.Connected) {
-        connection
-          .invoke("LeaveChatroom", selectedChatroom.chatroomID.toString())
-          .then(() => connection.stop())
-          .catch((err) => console.error("Cleanup error:", err));
-      } else {
-        connection?.stop().catch((err) => console.error("Stop error:", err));
-      }
-    };
-  }, [selectedChatroom]);
+  }, [selectedChatroom, receivedMessages]);
 
   // Scroll through messages uptil latest one.
   useEffect(() => {
@@ -154,15 +75,15 @@ const ChatWindow = ({ selectedChatroom, setChatroomsUpdated }) => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (message.trim() === "") return;
-  
+
     const newMessage = createSendMessageRequestDto(
       message,
       selectedChatroom.chatroomID
     );
-  
+
     try {
       await sendMessage(newMessage);
-  
+
       // Send real-time notification via SignalR
       if (connection) {
         connection.invoke(
@@ -172,7 +93,7 @@ const ChatWindow = ({ selectedChatroom, setChatroomsUpdated }) => {
           message
         );
       }
-  
+
       setMessage("");
 
       // Update chatrooms list.
@@ -180,7 +101,7 @@ const ChatWindow = ({ selectedChatroom, setChatroomsUpdated }) => {
     } catch (error) {
       console.error("Error sending message:", error);
     }
-  };  
+  };
 
   return (
     <div className="flex flex-col h-[72vh]">
