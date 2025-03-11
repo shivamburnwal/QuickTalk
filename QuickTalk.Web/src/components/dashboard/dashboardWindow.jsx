@@ -12,6 +12,7 @@ const Dashboard = () => {
 
   const [chatrooms, setChatrooms] = useState([]);
   const [selectedChatroom, setSelectedChatroom] = useState(null);
+  const [chatroomsUpdated, setChatroomsUpdated] = useState(false);
 
   useEffect(() => {
     if (!user?.token) return;
@@ -30,7 +31,7 @@ const Dashboard = () => {
     };
 
     setTimeout(fetchChatrooms, 100);
-  }, [user]);
+  }, [user, chatroomsUpdated]);
 
   const handleChatroomSelect = (chatroom) => {
     setSelectedChatroom(chatroom);
@@ -43,12 +44,12 @@ const Dashboard = () => {
       // Navigate to login and remove user state.
       navigate("/login");
       setUser(null);
-      
+
       console.log("Logged out successfully.");
     } catch (error) {
       console.error("Logout failed:", error);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-blue-500 to-purple-600">
@@ -76,7 +77,10 @@ const Dashboard = () => {
           </div>
 
           <div className="col-span-9 p-6 shadow-xl border border-gray-300 bg-gray-100 rounded-br-lg">
-            <ChatroomWindow selectedChatroom={selectedChatroom} />
+            <ChatroomWindow
+              selectedChatroom={selectedChatroom}
+              setChatroomsUpdated={setChatroomsUpdated}
+            />
           </div>
         </div>
       </div>

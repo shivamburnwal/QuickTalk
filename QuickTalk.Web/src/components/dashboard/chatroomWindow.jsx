@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { format, isToday, isYesterday, parseISO } from "date-fns";
 import * as signalR from "@microsoft/signalr";
 
-const ChatWindow = ({ selectedChatroom }) => {
+const ChatWindow = ({ selectedChatroom, setChatroomsUpdated }) => {
   const { user } = useAuth();
   const messagesEndRef = useRef(null);
   const prevChatroomId = useRef(null); // Store previous chatroom ID
@@ -114,6 +114,9 @@ const ChatWindow = ({ selectedChatroom }) => {
               sentAt: new Date().toISOString(),
             },
           ]);
+
+          // Update chatrooms list.
+          setChatroomsUpdated((prev) => !prev);
         }
       });
 
@@ -171,6 +174,9 @@ const ChatWindow = ({ selectedChatroom }) => {
       }
   
       setMessage("");
+
+      // Update chatrooms list.
+      setChatroomsUpdated((prev) => !prev);
     } catch (error) {
       console.error("Error sending message:", error);
     }
